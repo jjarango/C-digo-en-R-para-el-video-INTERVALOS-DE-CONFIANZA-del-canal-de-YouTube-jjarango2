@@ -1,0 +1,92 @@
+# Código en R para el video "INTERVALOS DE CONFIANZA" del canal de YouTube jjarango2
+# https://github.com/jjarango/C-digo-en-R-para-el-video-INTERVALOS-DE-CONFIANZA-del-canal-de-YouTube-jjarango2.git
+
+# Para declarar la librería data.table
+library(data.table)
+
+# Para llamar la base de datos weight-height.csv
+datos <- fread("D:/Documents/NUEVOS/PREMIERE PRO PROYECTOS EN/INTERVALOS DE CONFIANZA/RECURSOS/weight-height.csv")
+
+#Acá cree una nueva variable llamada altura para pasar pulgadas a cms.
+Altura <- datos$Height*2.54
+
+# Para volver volver el vector altura una data.table
+Altura <- as.data.table(Altura)
+
+# Para calcular la media y la DE de la recién creada altura 
+media_Altura_población <- mean(Altura$Altura)
+DE_de_Altura_población <- sd(Altura$Altura)
+
+# Para generar 1a muestra de 100 sujetos
+Primera_muestrade100 <- sample(Altura$Altura, size = 100)
+
+# Para volver esa muestra de 100 en un data.table
+Primera_muestrade100dt <- as.data.table(Primera_muestrade100)
+
+# Para calcular la media y la DE de la muestra 
+media_muestra1 <- mean(Primera_muestrade100dt$Primera_muestrade100)
+DE_muestra1 <- sd(Primera_muestrade100dt$Primera_muestrade100)
+
+# Para volver esa media_muestra1 un data.table
+media_muestra1dt <- as.data.table(media_muestra1)
+
+# La función t.test se usa para calcular intervalos de confianza para la media de la muestra
+Int_Conf_95_de_la_primera_muestra <- t.test(x = Primera_muestrade100, conf.level = 0.95)$conf.int
+
+# Para volver esa Int_Conf_95_de_la_primera_muestra un data.table
+Int_Conf_95_de_la_primera_muestradt <- as.data.table(Int_Conf_95_de_la_primera_muestra)
+
+# Ahora defino el IC_bajo
+IC_bajo <- Int_Conf_95_de_la_primera_muestra [1]
+
+# Ahora defino el IC_alto
+IC_alto <- Int_Conf_95_de_la_primera_muestra [2]
+
+# Para adicionar los IC a la data.table media_muestradt
+media_muestra1dt<- cbind(media_muestra1,IC_bajo,IC_alto)
+
+# Ahora ya tengo un data.table que se llama media_muestra1dt y tiene la media de la 
+# primera muestra y su IC. Luego salto a la línea 54
+
+# Ahora voy a crear lo que sería la tabla final:
+TABLA_FINAL <- media_muestra1dt
+
+# Ahora tocaría repetir el ciclo desde la línea 17 a 43 y así generar una nueva muestra
+# Que me dejaría con un nuevo media_muestra1dt que ahora tiene la segunda muestra
+
+# Fantástico. 
+# Ahora tocaría adicionarle una fila nueva a la TABLA_FINAL
+# El comando parece ser rbind
+# Según cuentas, primero hay que crear un data.frame con las filas que deseo agregar, porque no parece.
+# que sirva el data.table que se llama mediamuestra1dt
+
+para_adicionar <-data.frame (media_muestra1=media_muestra1,IC_alto=IC_alto,IC_bajo=IC_bajo)
+
+# Luego si debería poderse actualizar la TABLA_FINAL
+
+TABLA_FINAL <- rbind(TABLA_FINAL,para_adicionar)
+
+# Ahora vamos a hacer un loop para obtener 100 muestras con sus respectivos IC. Nótese que
+# el número en la línea 84 es 99, pues ya habíamos hecho las dos primeras muestras y solo nos faltan 
+# 98 para llegar a 100
+
+count <- 0
+repeat {
+  Primera_muestrade100 <- sample(Altura$Altura, size = 100)
+  Primera_muestrade100dt <- as.data.table(Primera_muestrade100)
+  media_muestra1 <- mean(Primera_muestrade100dt$Primera_muestrade100)
+  DE_muestra1 <- sd(Primera_muestrade100dt$Primera_muestrade100)
+  media_muestra1dt <- as.data.table(media_muestra1)
+  Int_Conf_95_de_la_primera_muestra <- t.test(x = Primera_muestrade100, conf.level = 0.95)$conf.int
+  Int_Conf_95_de_la_primera_muestradt <- as.data.table(Int_Conf_95_de_la_primera_muestra)
+  IC_bajo <- Int_Conf_95_de_la_primera_muestra [1]
+  IC_alto <- Int_Conf_95_de_la_primera_muestra [2]
+  media_muestra1dt<- cbind(media_muestra1,IC_bajo,IC_alto)
+  para_adicionar <-data.frame (media_muestra1=media_muestra1,IC_alto=IC_alto,IC_bajo=IC_bajo)
+  TABLA_FINAL <- rbind(TABLA_FINAL,para_adicionar)
+  count <- count + 1
+  if(count == 98) break
+}
+
+
+write.csv(TABLA_FINAL)
